@@ -41,11 +41,11 @@ rust-pre-commit:
   set -euxo pipefail
   cargo fmt
   cargo clippy --all-targets -- -D warnings
-  cargo sqlx prepare --workspace
+  cargo sqlx prepare
   cargo test
 
-build-release:
-  cargo build --release
+build-release: rust-pre-commit
+  SQLX_OFFLINE=true cargo build --release
   
 
 spawn-n-workers N_WORKERS: build-release
@@ -55,3 +55,8 @@ spawn-n-workers N_WORKERS: build-release
   for i in $(seq 1 {{N_WORKERS}}); do 
     RUST_LOG="error" ./target/release/svix-takehome-assignment executor > logs/worker_$i.log &
   done
+
+build-image: build-release
+   docker image build --tag svix-takehome-assignment .
+
+
