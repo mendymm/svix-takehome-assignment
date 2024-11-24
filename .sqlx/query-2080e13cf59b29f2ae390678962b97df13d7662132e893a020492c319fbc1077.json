@@ -1,0 +1,41 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            insert into tasks(id,status,execution_time,\"task_type\") values ($1,$2,$3,$4);\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "task_status",
+            "kind": {
+              "Enum": [
+                "submitted",
+                "started_executing",
+                "done",
+                "failed",
+                "deleted"
+              ]
+            }
+          }
+        },
+        "Timestamptz",
+        {
+          "Custom": {
+            "name": "task_type",
+            "kind": {
+              "Enum": [
+                "foo",
+                "bar",
+                "baz"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2080e13cf59b29f2ae390678962b97df13d7662132e893a020492c319fbc1077"
+}

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update tasks set \n            status = 'started_executing',\n            started_executing_at = current_timestamp\n            where id = $1\n            and status = 'submitted'\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0f13754aaff85b4ddab7093f0748c89055ce2873d38c83071bf5d973ca8ab44d"
+}

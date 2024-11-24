@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update tasks set status = 'failed'::task_status, failed_at = current_timestamp where id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "9278bc8b0f1f4680fcf12e7cdab64364af2aeff24c7cbedfcd450f7e89a8b592"
+}
