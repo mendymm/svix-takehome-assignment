@@ -2,8 +2,8 @@ use chrono::DateTime;
 use chrono::Utc;
 use sqlx::postgres::types::PgInterval;
 use sqlx::postgres::PgQueryResult;
-use sqlx::Executor;
-use sqlx::PgPool;
+use sqlx::{Executor, PgPool, Postgres, Transaction};
+
 use uuid::Uuid;
 
 use crate::{types, AppConfig, Result};
@@ -169,18 +169,30 @@ impl DbClient {
         Ok(result)
     }
 
-    pub async fn delete_task(&self, task_id: Uuid) -> Result<PgQueryResult> {
-        let result = sqlx::query!(
-            r#"
-        update tasks set
-        status = 'deleted'::task_status,
-        deleted_at = current_timestamp
-        where id = $1 and status != 'deleted'::task_status"#,
-            task_id
-        )
-        .execute(&self.pool)
-        .await?;
-        Ok(result)
+    pub async fn mark_task_deleted(&self, task_id: Uuid) -> Result<()> {
+        let mut tx = self.pool.begin().await?;
+
+        if let Some(task_status) = get_task_status(&mut tx, task_id).await? {
+            if task_status == types::TaskStatus::Submitted {
+                // we don't need to check the result since the errors returned by error::TaskNotFound and Error::UnableToDeleteTask
+                // will notify the client if the task is not found, or the task can't be deleted
+                let _result = sqlx::query!(
+                    r#"
+                update tasks set
+                status = 'deleted'::task_status,
+                deleted_at = current_timestamp
+                where id = $1 and status != 'deleted'::task_status"#,
+                    task_id
+                )
+                .execute(&self.pool)
+                .await?;
+                Ok(())
+            } else {
+                Err(crate::Error::UnableToDeleteTask(task_id, task_status))
+            }
+        } else {
+            Err(crate::Error::TaskNotFound(task_id))
+        }
     }
     /// when a worker thread is ready to execute a job, (task.execution <= now())
     /// it will call this function and attempt to acquire an exclusive lock on the task
@@ -201,7 +213,8 @@ impl DbClient {
     ///
     /// and if we see rows_modified = 1, we know that this thread was the first to acquire the lock, and we can proceed executing the task
     ///
-    /// note: this assumes; that the transaction isolation level is read committed, (the default level)\
+    /// note 1: this assumes that the transaction isolation level is read committed, (the default level)
+    /// note 2: this will also prevent a worker from executing a task that was deleted after the task was submitted to the in memory queue
     ///
     pub async fn acquire_exclusive_lock(&self, task_id: Uuid) -> Result<PgQueryResult> {
         let mut tx = self.pool.begin().await?;
@@ -241,5 +254,24 @@ impl DbClient {
     .execute(&self.pool)
     .await?;
         Ok(())
+    }
+}
+
+/// if you need to get the status during a transaction
+async fn get_task_status(
+    tx: &mut Transaction<'_, Postgres>,
+    task_id: Uuid,
+) -> Result<Option<types::TaskStatus>> {
+    let record = sqlx::query!(
+        r#"select status as "status: types::TaskStatus" from tasks where id = $1"#,
+        task_id
+    )
+    .fetch_optional(tx.as_mut())
+    .await?;
+
+    if let Some(status) = record {
+        Ok(Some(status.status))
+    } else {
+        Ok(None)
     }
 }

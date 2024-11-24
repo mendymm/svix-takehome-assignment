@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Deserialize, Serialize, sqlx::Type, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, sqlx::Type, Clone, Copy, PartialEq, Eq)]
 #[sqlx(type_name = "task_status", rename_all = "snake_case")]
 #[serde(rename_all = "snake_case")]
 

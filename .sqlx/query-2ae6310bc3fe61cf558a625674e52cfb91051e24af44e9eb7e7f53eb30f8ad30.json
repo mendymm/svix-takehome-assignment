@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                update tasks set\n                status = 'deleted'::task_status,\n                deleted_at = current_timestamp\n                where id = $1 and status != 'deleted'::task_status",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2ae6310bc3fe61cf558a625674e52cfb91051e24af44e9eb7e7f53eb30f8ad30"
+}

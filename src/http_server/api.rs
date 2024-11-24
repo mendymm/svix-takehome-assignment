@@ -106,13 +106,8 @@ pub async fn delete_task(
     State(app_state): State<AppState>,
     Path(task_id): Path<Uuid>,
 ) -> Result<Response> {
-    let result = app_state.db_client.delete_task(task_id).await?;
-
-    if result.rows_affected() >= 1 {
-        Ok("OK".into_response())
-    } else {
-        Ok(StatusCode::NOT_FOUND.into_response())
-    }
+    app_state.db_client.mark_task_deleted(task_id).await?;
+    Ok("OK".into_response())
 }
 
 #[derive(Debug, serde::Deserialize)]
