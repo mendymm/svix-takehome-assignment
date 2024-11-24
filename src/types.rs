@@ -19,7 +19,7 @@ pub enum TaskStatus {
     Failed,
 }
 
-#[derive(Debug, Deserialize, Serialize, sqlx::Type, Clone, Copy)]
+#[derive(Debug, Deserialize, Serialize, sqlx::Type, PartialEq, Eq, Clone, Copy)]
 #[sqlx(type_name = "task_type", rename_all = "lowercase")]
 #[serde(rename_all = "lowercase")]
 pub enum TaskType {
@@ -33,7 +33,7 @@ pub enum TaskType {
     Baz,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Task {
     pub id: Uuid,
     pub task_type: TaskType,

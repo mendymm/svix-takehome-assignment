@@ -7,6 +7,7 @@ use crate::{db::DbClient, types, AppConfig};
 
 // for now there are only 2 events
 // all enum variants are to be de/serialized in snake_case
+#[derive(Debug, PartialEq, Eq)]
 pub enum Notification {
     /// this will be sent when the server gets a SIGTERM
     /// the worker node will break out of if this event it sent
@@ -168,5 +169,40 @@ async fn submit_task_to_mpsc(
         // how do we insure that every task will be executed eventually?
         // there is a separate thread that will search the database for any tasks that have a `task.execution_time` that us <= (now+<max_sleep_seconds>)
         // and notify the pg channel about them ordering by execution_time ASC
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use chrono::DateTime;
+
+    use crate::types::Task;
+
+    // each notification has a <type> and a optional space separated <payload>
+    use super::Notification;
+
+    #[test]
+    pub fn test_notification_with_no_payload_is_parsed() {
+        let notification_str = "stop";
+        let expected_notification = Notification::Stop;
+        assert_eq!(
+            expected_notification,
+            Notification::try_from(notification_str).unwrap()
+        )
+    }
+    #[test]
+    pub fn test_new_task_notification_is_parsed_correctly() {
+        let notification_str = r#"new_task {"id":"7658bfd8-f571-4925-8316-4a8fc75d930e","task_type":"bar","execution_time":"2024-11-24T20:34:36.909592Z"}"#;
+        let expected_notification = Notification::NewTask(Task {
+            id: uuid::uuid!("7658bfd8-f571-4925-8316-4a8fc75d930e"),
+            execution_time: DateTime::parse_from_rfc3339("2024-11-24T20:34:36.909592+00:00")
+                .unwrap()
+                .to_utc(),
+            task_type: crate::types::TaskType::Bar,
+        });
+        assert_eq!(
+            expected_notification,
+            Notification::try_from(notification_str).unwrap()
+        )
     }
 }
