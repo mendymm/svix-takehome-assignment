@@ -77,7 +77,7 @@ pub fn load_config() -> Result<AppConfig, ()> {
         listen_port: 3000,
         db: DbConfig {
             acquire_timeout: 10, // 10 seconds
-            host: "127.0.0.1".to_string(),
+            host: "postgres".to_string(),
             port: 5432,
             username: "postgres".to_string(),
             password: SecretBox::new(Box::new("password".to_string())),
