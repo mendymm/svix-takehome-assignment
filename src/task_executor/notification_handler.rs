@@ -125,7 +125,6 @@ async fn process_notification(
     let now_plus_n_seconds =
         chrono::Utc::now() + chrono::TimeDelta::seconds(app_config.max_seconds_to_sleep);
     if task.execution_time <= now_plus_n_seconds {
-        tracing::info!("ok");
         submit_task_to_mpsc(task, sender, task_ids_in_queue).await;
     } else {
         // we are assuming that most tasks that we get here have a `task.execution_time` that us <= (now+<max_sleep_seconds>)
