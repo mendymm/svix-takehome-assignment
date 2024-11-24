@@ -1,0 +1,39 @@
+services:    
+  postgres:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_DB: svix_tasks
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: postgres
+    # increase the connection limit from 100 to 1000
+    command: ["-N", "1000"]
+    volumes:
+      # apply the migrations
+      - ./migrations:/docker-entrypoint-initdb.d:ro
+
+  workers:
+    image: svix-takehome-assignment
+    build: ./
+    command: ["executor"]
+    deploy:
+      mode: replicated
+      replicas: 10
+    depends_on:
+      postgres:
+        condition: service_started
+
+
+  web-service:
+    image: svix-takehome-assignment
+    build: ./
+    command: ["http"]
+    ports:
+      - 3000:3000
+    depends_on:
+      postgres:
+        condition: service_started
+      workers:
+        condition: service_started
+
+    
