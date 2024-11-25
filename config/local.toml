@@ -1,0 +1,11 @@
+[server]
+listen_port = 3000
+
+[db]
+acquire_timeout = 10 # 10 seconds
+host = "127.0.0.1"
+port = 5432
+username = "postgres"
+password = "password"
+database = "svix_tasks"
+tasks_channel_name = "new_tasks"

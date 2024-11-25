@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "update tasks set status = 'done'::task_status, completed_at = current_timestamp where id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7474351eed3b29d404e7948e39c3f3a66d83c856e603b70904bc418760c88ea6"
+}
