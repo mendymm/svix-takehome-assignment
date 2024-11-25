@@ -100,7 +100,7 @@ TODO(production): do some tests on memory implications of scaling this server
 
 Once a notification is received from the broadcast, the task is added to the [in memory queue](#processing-tasks-in-the-in-memory-queue). if the queue is full, the job is ignored: (this is very very hot code path). this will result is some tasks to wait until the next \<look_for_new_tasks_interval\> where the pg_searcher thread will add them back to the queue
 
-Note: the pg_searcher has a very basic priority over the notification handler.
+Note: the pg_searcher has a very basic priority over the notification handler, this means that if the queue has capacity of 5 the pg_searcher will be able to submit a task before the notification handler
 
 TODO(production): make sure that older tasks gets added to the in memory queue first, to avoid issue where task can wait forever
 
