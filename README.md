@@ -27,6 +27,8 @@ A docker-compose file is provided, it will start a postgres database, 1 http ser
 
 Once the service is running, use `python3 submit_task.py` to submit 10,000 tasks with execution time that varies from -30min to +30min
 
+To make sure each task was only executed once run `docker compose logs workers | python verify_logs.py`.
+
 ## HTTP API
 The API is unauthenticated, and unauthorized. Adding authentication and authorization is out of scope for this design, 
 since in order to add in authn/z I will need to know who the intended use of system is. and i need to know if this system will be multi tenet
