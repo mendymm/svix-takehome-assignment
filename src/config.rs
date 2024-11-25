@@ -134,22 +134,4 @@ pub fn load_config() -> Result<AppConfig, config::ConfigError> {
         println!("{:?}", app_config);
     }
     Ok(app_config)
-
-    // // TODO(production) load config from file/env, for now it's statically defined
-    // Ok(AppConfig {
-    //     look_for_new_tasks_interval: 30, // 30 seconds
-    //     max_seconds_to_sleep: 100,       // 30 seconds
-    //     max_concurrent_tasks_in_memory: 2000,
-    //     max_concurrent_executing_tasks: 100,
-    //     listen_port: 3000,
-    //     db: DbConfig {
-    //         acquire_timeout: 10, // 10 seconds
-    //         host: "postgres".to_string(),
-    //         port: 5432,
-    //         username: "postgres".to_string(),
-    //         password: SecretBox::new(Box::new("password".to_string())),
-    //         database: "svix_tasks".to_string(),
-    //         tasks_channel_name: "new_tasks".to_string(),
-    //     },
-    // })
 }
