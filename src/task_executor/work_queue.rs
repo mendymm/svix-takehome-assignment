@@ -118,7 +118,7 @@ async fn execute_task_once(db_client: &DbClient, task: types::Task) {
     let result = db_client.acquire_exclusive_lock(task.id).await.unwrap();
 
     if result.rows_affected() == 0 {
-        // this means that status != 'submitted' when we try to set the execution_id
+        // this means that status != 'submitted'
         // so we assume a different thread got this task
     } else if result.rows_affected() == 1 {
         execute_task(task, db_client).await;
