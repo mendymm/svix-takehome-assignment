@@ -16,6 +16,9 @@ services:
     image: svix-takehome-assignment
     build: ./
     command: ["executor"]
+    environment:
+      # change the host from 127.0.0.1 to postgres (this is the same postgres in this compose file) 
+      APP__DB__HOST: postgres
     deploy:
       mode: replicated
       replicas: 10
@@ -28,6 +31,9 @@ services:
     image: svix-takehome-assignment
     build: ./
     command: ["http"]
+    environment:
+      # change the host from 127.0.0.1 to postgres (this is the same postgres in this compose file) 
+      APP__DB__HOST: postgres
     ports:
       - 3000:3000
     depends_on:

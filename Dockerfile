@@ -12,4 +12,6 @@ RUN apt-get update -y \
 # todo(production): use cargo chef for docker image, but for now this is faster. (since i can use my target dir cache)
 COPY  target/release/svix-takehome-assignment svix-takehome-assignment
 
+COPY config /app/config
+
 ENTRYPOINT ["./svix-takehome-assignment"]
