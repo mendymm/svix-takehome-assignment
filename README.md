@@ -73,3 +73,36 @@ url params:
     status: enum of (`submitted`, `started_executing`, `done`, `failed`, `deleted`)
     type: enum of (`foo`, `bar`, `baz`)
 ```
+
+
+# Limitations
+In order to guarantee **Exactly Once** execution, while still allowing the workers to scale, and allowing the client to specify an arbitrary execution date. The system considers 3 classes of tasks
+
+1. tasks that are submitted with task.execution_time in the far future, the worker should have a cheap way to filter these tasks out, and not load them into memory until task.execution_time <= now()+ \<max_seconds_to_sleep\>
+
+2. tasks that are submitted with task.execution_time <= now()+ \<max_seconds_to_sleep\>, for these tasks a [tokio task](https://docs.rs/tokio/latest/tokio/task/index.html) is spawned to wait until task.execution_time <= now(), and then it will proceed to execute the task
+
+3. tasks that are submitted task.execution_time <= now(), the system should execute these as soon as possible
+
+
+### Task submitted with task.execution_time with task.execution_time >= now()+ \<max_seconds_to_sleep\>
+These are tasks submitted with task.execution_time that is to far in the future for the worker nodes to simply sleep until then. for these tasks the pg_searcher thread will search the database every \<look_for_new_tasks_interval\> seconds for any tasks `where status = 'submitted' and execution_time <= (now()+ <look_for_new_tasks_interval>)` next it will submit it to the [in memory queue](#processing-tasks-in-the-in-memory-queue)
+
+
+### Tasks submitted with task.execution_time with task.execution_time <= now()+ \<max_seconds_to_sleep\> (includes jobs that should run ASAP)
+To communicate between the http service and the N worker nodes (since they scale independently), I use [postgres channel](https://www.postgresql.org/docs/current/sql-notify.html), this provides for a simple broadcast queue.
+
+NOTE: since all workers will receive any notification send in the channel, make sure to set <max_concurrent_tasks_in_memory> to a high number. since some tasks will be sent to every single worker
+
+TODO(production): do some tests on memory implications of scaling this server
+
+Once a notification is received from the broadcast, the task is added to the [in memory queue](#processing-tasks-in-the-in-memory-queue). if the queue is full, the job is ignored: (this is very very hot code path). this will result is some tasks to wait until the next \<look_for_new_tasks_interval\> where the pg_searcher thread will add them back to the queue
+
+Note: the pg_searcher has a very basic priority over the notification handler.
+
+TODO(production): make sure that older tasks gets added to the in memory queue first, to avoid issue where task can wait forever
+
+### Processing tasks in the in memory queue
+This is a queue with a max size of \<max_concurrent_tasks_in_memory\>,  once in the queue the job is spawned and sleeps until execution_time <= now(). Next it acquires a [Semaphore](https://docs.rs/tokio/latest/tokio/sync/struct.Semaphore.html) with size of \<max_concurrent_executing_tasks\>. It then ensures it has an [exclusive lock](https://github.com/mendymm/svix-takehome-assignment/blob/wip/src/db.rs#L197-L238) to start executing the job
+
+
