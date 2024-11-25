@@ -11,6 +11,12 @@ services:
     volumes:
       # apply the migrations
       - ./migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 5s
 
   workers:
     image: svix-takehome-assignment
@@ -24,7 +30,7 @@ services:
       replicas: 10
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
 
 
   web-service:
@@ -38,7 +44,7 @@ services:
       - 3000:3000
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       workers:
         condition: service_started
 
