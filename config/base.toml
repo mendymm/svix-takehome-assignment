@@ -1,0 +1,7 @@
+# this is config that both prod and local will share
+[server]
+print_config_on_startup = false
+look_for_new_tasks_interval = 30
+max_seconds_to_sleep = 100
+max_concurrent_tasks_in_memory = 2000
+max_concurrent_executing_tasks = 100
