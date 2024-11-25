@@ -123,7 +123,7 @@ async fn process_notification(
     task_ids_in_queue: &scc::HashSet<uuid::Uuid>,
 ) {
     let now_plus_n_seconds =
-        chrono::Utc::now() + chrono::TimeDelta::seconds(app_config.max_seconds_to_sleep);
+        chrono::Utc::now() + chrono::TimeDelta::seconds(app_config.server.max_seconds_to_sleep);
     if task.execution_time <= now_plus_n_seconds {
         submit_task_to_mpsc(task, sender, task_ids_in_queue).await;
     } else {
@@ -163,7 +163,7 @@ async fn submit_task_to_mpsc(
             let _ = task_ids_in_queue.insert_async(task_id).await;
         }
     } else {
-        // if the channel has more tasks then the `app_config.max_concurrent_tasks_in_memory`
+        // if the channel has more tasks then the `app_config.server.max_concurrent_tasks_in_memory`
         // then we ignore this task.
         // how do we insure that every task will be executed eventually?
         // there is a separate thread that will search the database for any tasks that have a `task.execution_time` that us <= (now+<max_sleep_seconds>)

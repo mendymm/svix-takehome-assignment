@@ -10,7 +10,7 @@ use super::{api, AppState};
 pub async fn start_server(app_config: AppConfig, db_client: DbClient) {
     let app_state = AppState {
         channel_name: app_config.db.tasks_channel_name.clone(),
-        max_seconds_to_sleep: app_config.max_seconds_to_sleep,
+        max_seconds_to_sleep: app_config.server.max_seconds_to_sleep,
         db_client,
     };
 
@@ -25,8 +25,9 @@ pub async fn start_server(app_config: AppConfig, db_client: DbClient) {
         .with_state(app_state);
 
     // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", app_config.listen_port))
-        .await
-        .unwrap();
+    let listener =
+        tokio::net::TcpListener::bind(format!("0.0.0.0:{}", app_config.server.listen_port))
+            .await
+            .unwrap();
     axum::serve(listener, app).await.unwrap();
 }

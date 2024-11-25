@@ -22,7 +22,7 @@ pub async fn start_pg_searcher(
 ) {
     tracing::debug!("Starting pg searcher thread");
     // execute right on startup
-    let sleep_duration = Duration::from_secs(app_config.look_for_new_tasks_interval as u64);
+    let sleep_duration = Duration::from_secs(app_config.server.look_for_new_tasks_interval as u64);
     loop {
         search_and_submit_upcoming_tasks(&db_client, &sender, &app_config, &task_ids_in_queue)
             .await;
@@ -39,8 +39,8 @@ async fn search_and_submit_upcoming_tasks(
 ) {
     let tasks = db_client
         .fetch_task_for_pg_searcher(
-            app_config.max_concurrent_tasks_in_memory as i64,
-            app_config.max_seconds_to_sleep,
+            app_config.server.max_concurrent_tasks_in_memory as i64,
+            app_config.server.max_seconds_to_sleep,
         )
         .await
         .unwrap();

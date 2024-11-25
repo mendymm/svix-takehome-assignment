@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::time::Duration;
 
 use secrecy::{ExposeSecret, SecretBox};
@@ -5,11 +6,24 @@ use sqlx::postgres::PgPoolOptions;
 use sqlx::Executor;
 use sqlx::{postgres::PgConnectOptions, PgPool};
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize)]
 // app config is not clone since the secrecy::SecretBox is not clone* (excluding the number types)
 pub struct AppConfig {
-    pub listen_port: u16,
     pub db: DbConfig,
+    pub server: ServerConfig,
+
+    #[serde(skip)]
+    pub environment: Environment,
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ServerConfig {
+    // should the server print config on startup
+    // useful when debugging
+    pub print_config_on_startup: bool,
+
+    pub listen_port: u16,
+
     /// this is max amount of time a worker thread is allowed to sleep before executing the task
     /// this allows the scheduler to send a task that is due in <max_seconds_to_sleep> to an executer
     /// and the executer will sleep until the `task.execution_time` is <= now()
@@ -29,7 +43,7 @@ pub struct AppConfig {
     pub max_concurrent_executing_tasks: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, serde::Deserialize)]
 pub struct DbConfig {
     acquire_timeout: u32,
     host: String,
@@ -38,7 +52,6 @@ pub struct DbConfig {
     // don't want to accidentally print this secret
     password: SecretBox<String>,
     database: String,
-
     pub tasks_channel_name: String,
 }
 
@@ -67,22 +80,76 @@ impl DbConfig {
     }
 }
 
-pub fn load_config() -> Result<AppConfig, ()> {
-    // TODO(production) load config from file/env, for now it's statically defined
-    Ok(AppConfig {
-        look_for_new_tasks_interval: 30, // 30 seconds
-        max_seconds_to_sleep: 100,       // 30 seconds
-        max_concurrent_tasks_in_memory: 2000,
-        max_concurrent_executing_tasks: 100,
-        listen_port: 3000,
-        db: DbConfig {
-            acquire_timeout: 10, // 10 seconds
-            host: "postgres".to_string(),
-            port: 5432,
-            username: "postgres".to_string(),
-            password: SecretBox::new(Box::new("password".to_string())),
-            database: "svix_tasks".to_string(),
-            tasks_channel_name: "new_tasks".to_string(),
-        },
-    })
+/// The possible runtime environment for our application.
+#[derive(Debug, Clone, PartialEq, Eq, derive_more::FromStr)]
+pub enum Environment {
+    Production,
+    Local,
+}
+
+impl Default for Environment {
+    fn default() -> Self {
+        Self::Local
+    }
+}
+
+impl std::fmt::Display for Environment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match *self {
+            Environment::Local => write!(f, "local"),
+            Environment::Production => write!(f, "production"),
+        }
+    }
+}
+
+pub fn load_config() -> Result<AppConfig, config::ConfigError> {
+    let base_path = std::env::current_dir().expect("Failed to determine the current directory");
+    let configuration_directory = base_path.join("config");
+
+    // Detect the running environment.
+    // Default to `local` if unspecified.
+    let env_str = std::env::var("APP_ENVIRONMENT").unwrap_or_else(|_| {
+        println!("No `APP_ENVIRONMENT` specified! starting in local mode");
+        "local".into()
+    });
+    let environment = Environment::from_str(&env_str)
+        .expect("Failed to parse APP_ENVIRONMENT, expected on of `local`, `production`");
+
+    let conf_loader = config::Config::builder()
+        // Read the "default" configuration file
+        .add_source(config::File::from(configuration_directory.join("base")).required(true))
+        // Read the config from the current "environment"
+        .add_source(
+            config::File::from(configuration_directory.join(environment.to_string()))
+                .required(true),
+        )
+        // Add in settings from environment variables (with a prefix of APP and '__' as separator)
+        // E.g. `APP_APPLICATION__PORT=5001 would set `Settings.application.port`
+        .add_source(config::Environment::with_prefix("app").separator("__"))
+        .build()?;
+
+    let mut app_config: AppConfig = conf_loader.try_deserialize()?;
+    app_config.environment = environment;
+    if app_config.server.print_config_on_startup {
+        println!("{:?}", app_config);
+    }
+    Ok(app_config)
+
+    // // TODO(production) load config from file/env, for now it's statically defined
+    // Ok(AppConfig {
+    //     look_for_new_tasks_interval: 30, // 30 seconds
+    //     max_seconds_to_sleep: 100,       // 30 seconds
+    //     max_concurrent_tasks_in_memory: 2000,
+    //     max_concurrent_executing_tasks: 100,
+    //     listen_port: 3000,
+    //     db: DbConfig {
+    //         acquire_timeout: 10, // 10 seconds
+    //         host: "postgres".to_string(),
+    //         port: 5432,
+    //         username: "postgres".to_string(),
+    //         password: SecretBox::new(Box::new("password".to_string())),
+    //         database: "svix_tasks".to_string(),
+    //         tasks_channel_name: "new_tasks".to_string(),
+    //     },
+    // })
 }

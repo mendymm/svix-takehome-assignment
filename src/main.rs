@@ -20,12 +20,13 @@ fn start_tracing_subscriber() {
 #[tokio::main]
 async fn main() {
     start_tracing_subscriber();
-    let app_config = config::load_config().expect("Unable to load config, exiting!");
 
-    let db_client = db::DbClient::new(&app_config).await;
     let args = std::env::args().collect::<Vec<String>>();
     let usage = "please provide either 'http' or 'executor' as the first argument";
     let command = args.get(1).expect(usage);
+
+    let app_config = config::load_config().expect("Unable to load config, exiting!");
+    let db_client = db::DbClient::new(&app_config).await;
 
     match command.as_str() {
         "http" => http_server::start_server(app_config, db_client).await,

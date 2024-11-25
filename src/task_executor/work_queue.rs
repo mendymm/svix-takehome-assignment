@@ -16,8 +16,12 @@ pub async fn start_work_queue(
 ) {
     tracing::debug!("Started in memory work queue!");
 
-    let max_sleeping_tasks = Arc::new(Semaphore::new(app_config.max_concurrent_tasks_in_memory));
-    let max_executing_tasks = Arc::new(Semaphore::new(app_config.max_concurrent_executing_tasks));
+    let max_sleeping_tasks = Arc::new(Semaphore::new(
+        app_config.server.max_concurrent_tasks_in_memory,
+    ));
+    let max_executing_tasks = Arc::new(Semaphore::new(
+        app_config.server.max_concurrent_executing_tasks,
+    ));
 
     loop {
         if let Some(queue_event) = receiver.recv().await {
@@ -42,7 +46,7 @@ pub async fn start_work_queue(
                     } else {
                         tracing::debug!(
                             "max_sleeping_tasks of {} reached, ignoring task id: {}",
-                            app_config.max_concurrent_tasks_in_memory,
+                            app_config.server.max_concurrent_tasks_in_memory,
                             task.id
                         );
                     }

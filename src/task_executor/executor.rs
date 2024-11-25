@@ -8,8 +8,9 @@ use crate::{db::DbClient, AppConfig};
 
 pub async fn start_executor(app_config: Arc<AppConfig>, db_client: DbClient) {
     let task_ids_in_queue =
-        HashSet::<Uuid>::with_capacity(app_config.max_concurrent_tasks_in_memory);
-    let (tx, rx) = mpsc::channel::<super::QueueEvent>(app_config.max_concurrent_tasks_in_memory);
+        HashSet::<Uuid>::with_capacity(app_config.server.max_concurrent_tasks_in_memory);
+    let (tx, rx) =
+        mpsc::channel::<super::QueueEvent>(app_config.server.max_concurrent_tasks_in_memory);
 
     // start work queue first
     let conf = app_config.clone();
